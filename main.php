@@ -96,7 +96,7 @@ $products = $res->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 // close DB
 
-// helper: get first image for category/version
+// helper: get first image for category/version — returns ['web'=>..., 'disk'=>...]
 function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
@@ -107,7 +107,13 @@ function firstVersionImage($category, $version){
 
   natsort($found);
   $found = array_values($found);
-  return $dirWeb . "/" . basename($found[0]);
+  return ['web' => $dirWeb . "/" . basename($found[0]), 'disk' => $found[0]];
+}
+
+function imgFitClass(string $diskPath): string {
+  $size = @getimagesize($diskPath);
+  if (!$size) return 'img-fit-cover';
+  return $size[1] > $size[0] ? 'img-fit-cover' : 'img-fit-fill';
 }
 
 $clearUrl = "main.php";
@@ -135,7 +141,10 @@ $clearUrl = "main.php";
     .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
     .card{border:1px solid #eef2f6; border-radius:12px; padding:14px; transition:.15s; background:#fff;}
     .card:hover{box-shadow:0 2px 12px rgba(0,113,227,.12); border-color:#0071e3;}
-    .img{width:100%; height:170px; object-fit:cover; border-radius:10px; margin-bottom:10px; border:1px solid #eef2f6;}
+    .img-wrap{width:100%; height:170px; border-radius:10px; overflow:hidden; margin-bottom:10px; border:1px solid #eef2f6;}
+    .img{width:100%; height:100%; display:block;}
+    .img-fit-cover{object-fit:cover; object-position:top;}
+    .img-fit-fill{object-fit:fill;}
     .price{color:#0071e3; font-weight:700;}
     .small{color:#444; font-size:14px;}
     .pill{display:inline-block; padding:4px 8px; border-radius:999px; border:1px solid #eef2f6; font-size:12px; color:#444; margin-top:8px;}
@@ -225,11 +234,15 @@ $clearUrl = "main.php";
       <?php else: ?>
         <div class="grid">
           <?php foreach ($products as $p): ?>
-            <?php $img = firstVersionImage($p['category'], $p['version']); ?>
+            <?php $imgData = firstVersionImage($p['category'], $p['version']); ?>
             <div class="card">
               <a href="product.php?id=<?php echo (int)$p['id']; ?>">
-                <?php if ($img): ?>
-                  <img class="img" src="<?php echo e($img); ?>" alt="<?php echo e($p['name']); ?>">
+                <?php if ($imgData): ?>
+                  <div class="img-wrap">
+                    <img class="img <?php echo imgFitClass($imgData['disk']); ?>"
+                         src="<?php echo e($imgData['web']); ?>"
+                         alt="<?php echo e($p['name']); ?>">
+                  </div>
                 <?php endif; ?>
                 <div style="font-weight:700"><?php echo e($p['name']); ?></div>
               </a>

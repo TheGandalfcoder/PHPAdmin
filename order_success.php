@@ -55,6 +55,8 @@ $stmt->close();
 $db->close();
 
 // Build invoice HTML (table)
+$vatRate = 0.20;
+
 $invoiceHtml = '<table class="invoice-table">';
 $invoiceHtml .= '
   <tr>
@@ -66,10 +68,10 @@ $invoiceHtml .= '
   </tr>
 ';
 
-$total = 0.0;
+$subtotal = 0.0;
 foreach ($items as $it) {
   $line = (float)$it['price'] * (int)$it['quantity'];
-  $total += $line;
+  $subtotal += $line;
 
   $thumb = firstVersionImage($it['category'], $it['version']);
   $thumbHtml = $thumb
@@ -84,7 +86,18 @@ foreach ($items as $it) {
   $invoiceHtml .= '<td class="td-right"><strong>£' . number_format($line, 2) . '</strong></td>';
   $invoiceHtml .= '</tr>';
 }
+
+// VAT summary rows
+$vatAmount  = round($subtotal * $vatRate, 2);
+$grandTotal = round($subtotal + $vatAmount, 2);
+
+$invoiceHtml .= '<tr class="tr-summary"><td colspan="4" class="td-right">Subtotal</td><td class="td-right">£' . number_format($subtotal, 2) . '</td></tr>';
+$invoiceHtml .= '<tr class="tr-summary"><td colspan="4" class="td-right">VAT (' . (int)($vatRate * 100) . '%)</td><td class="td-right">£' . number_format($vatAmount, 2) . '</td></tr>';
+$invoiceHtml .= '<tr class="tr-total"><td colspan="4" class="td-right">Total (inc. VAT)</td><td class="td-right">£' . number_format($grandTotal, 2) . '</td></tr>';
+
 $invoiceHtml .= '</table>';
+
+$total = $grandTotal;
 
 // Address block
 $address = e($order['address_line1']) . '<br>';
@@ -250,6 +263,20 @@ $address .= e($order['city']) . '<br>' . e($order['postcode']) . '<br>' . e($ord
 
     .td-item{
       font-weight: 700;
+    }
+
+    .tr-summary td{
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+      padding: 8px 12px;
+    }
+
+    .tr-total td{
+      border-top: 2px solid var(--border);
+      font-weight: 700;
+      font-size: 15px;
+      padding: 10px 12px;
     }
 
     hr{

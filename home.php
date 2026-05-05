@@ -24,7 +24,7 @@ if ($res) {
   $res->free();
 }
 
-// helper: first image in img/<category>/<version>/
+// helper: returns ['web' => ..., 'disk' => ...] for the first image in img/<category>/<version>/
 function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
@@ -35,7 +35,13 @@ function firstVersionImage($category, $version){
 
   natsort($found);
   $found = array_values($found);
-  return $dirWeb . "/" . basename($found[0]);
+  return ['web' => $dirWeb . "/" . basename($found[0]), 'disk' => $found[0]];
+}
+
+function imgFitClass(string $diskPath): string {
+  $size = @getimagesize($diskPath);
+  if (!$size) return 'img-fit-cover';
+  return $size[1] > $size[0] ? 'img-fit-cover' : 'img-fit-fill';
 }
 ?>
 
@@ -147,11 +153,20 @@ function firstVersionImage($category, $version){
     .product-card:hover {
       box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     }
-    .product-card img {
-      width: 120px;
-      height: auto;
-      margin-bottom: 18px;
+    .product-card .img-wrap {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 18px;
+      border-radius: 10px;
+      overflow: hidden;
     }
+    .product-card .img-wrap img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .img-fit-cover { object-fit: cover; object-position: top; }
+    .img-fit-fill  { object-fit: fill; }
     .product-card h3 {
       font-size: 1.2rem;
       font-weight: 600;
@@ -205,13 +220,16 @@ function firstVersionImage($category, $version){
 
     <a href="main.php" class="blue-btn">Browse Products</a>
    <div class="product-grid">
-  <?php foreach ($products as $p): 
-    $img = firstVersionImage($p['category'], $p['version']);
-
+  <?php foreach ($products as $p):
+    $imgData = firstVersionImage($p['category'], $p['version']);
   ?>
     <div class="product-card">
-      <?php if ($img): ?>
-        <img src="<?php echo htmlspecialchars($img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
+      <?php if ($imgData): ?>
+        <div class="img-wrap">
+          <img src="<?php echo htmlspecialchars($imgData['web']); ?>"
+               alt="<?php echo htmlspecialchars($p['name']); ?>"
+               class="<?php echo imgFitClass($imgData['disk']); ?>">
+        </div>
       <?php endif; ?>
 
       <h3><?php echo htmlspecialchars($p['name']); ?></h3>
