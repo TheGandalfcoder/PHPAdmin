@@ -1184,7 +1184,7 @@ if ($emailTrigger):
   var toEmail   = <?= json_encode($emailTrigger['email']) ?>;
   var toName    = <?= json_encode($emailTrigger['name']) ?>;
   var orderId   = <?= json_encode($emailTrigger['order_id']) ?>;
-  var reviewUrl = window.location.origin + '/review.php?order_id=' + encodeURIComponent(orderId);
+  var reviewUrl = window.location.href.replace(/admin\.php.*$/, '') + 'review.php?order_id=' + encodeURIComponent(orderId);
 
   emailjs.send("service_1jwevr7", "template_pa86w3f", {
     to_email:      toEmail,
