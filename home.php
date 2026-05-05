@@ -1,0 +1,228 @@
+<?php
+require_once 'db.php';
+require_once 'auth.php';
+
+$db = db();
+
+// Get 1 per category (latest version)
+$products = [];
+$sql = "
+  SELECT p.*
+  FROM products p
+  INNER JOIN (
+    SELECT category, MAX(version) AS max_version
+    FROM products
+    GROUP BY category
+  ) m ON p.category = m.category AND p.version = m.max_version
+  ORDER BY FIELD(p.category,'phone','laptop','pad')
+";
+$res = $db->query($sql);
+if ($res) {
+  while ($row = $res->fetch_assoc()) {
+    $products[] = $row;
+  }
+  $res->free();
+}
+
+// helper: first image in img/<category>/<version>/
+function firstVersionImage($category, $version){
+  $dirDisk = __DIR__ . "/img/$category/$version";
+  $dirWeb  = "img/$category/$version";
+  if (!is_dir($dirDisk)) return null;
+
+  $found = glob($dirDisk . "/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", GLOB_BRACE);
+  if (empty($found)) return null;
+
+  natsort($found);
+  $found = array_values($found);
+  return $dirWeb . "/" . basename($found[0]);
+}
+?>
+
+
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pear Shop - Welcome</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      margin: 0;
+      background: #fff;
+      color: #000;
+    }
+    .hero {
+      background: #000;
+      color: #fff;
+      text-align: center;
+      padding: 100px 20px 60px 20px;
+      position: relative;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: -2px;
+    }
+    .hero p {
+      font-size: 1.5rem;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+    .hero .shop-btn {
+      background: #0071e3;
+      color: #fff;
+      border: none;
+      border-radius: 980px;
+      padding: 16px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .hero .shop-btn:hover {
+      background: #005bb5;
+    }
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 20px 40px 20px;
+      text-align: center;
+    }
+    .section h2 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+    .section p {
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    .section .blue-btn {
+      background: #0071e3;
+      color: #fff;
+      border: none;
+      border-radius: 980px;
+      padding: 12px 32px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+      margin-top: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .section .blue-btn:hover {
+      background: #005bb5;
+    }
+    .product-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 40px;
+    }
+
+     .logo img {
+      width: 78px;
+      height: auto;
+      margin-bottom: 18px;
+      display: inline-block;
+    } 
+    .product-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      width: 240px;
+      padding: 28px 18px;
+      text-align: center;
+      transition: box-shadow 0.2s;
+    }
+    .product-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .product-card img {
+      width: 120px;
+      height: auto;
+      margin-bottom: 18px;
+    }
+    .product-card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .product-card p {
+      font-size: 1rem;
+      color: #444;
+      margin-bottom: 14px;
+    }
+    .product-card .blue-btn {
+      padding: 8px 24px;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 700px) {
+      .product-grid {
+        flex-direction: column;
+        align-items: center;
+      }
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+      .section h2 {
+        font-size: 1.3rem;
+      }
+
+    }
+  </style>
+</head>
+<body>
+<?php include '_nav.php'; ?>
+  <div class="hero">
+    <div class="logo">
+      <img src="img/logo.png" alt="Pear Logo">
+    </div>
+    <h1>Discover Pear Products</h1>
+    <p>Shop the latest Pear devices, fast shipping, and expert support.<br>Experience innovation and design, inspired by Pear.</p>
+    <a href="main.php" class="shop-btn">Shop Now</a>
+  </div>
+  <div class="section">
+    <h2>Why Shop With Us?</h2>
+    <p>
+      We offer the newest Pear devices, fast shipping, and specialised software<br>
+      Explore our products
+    </p>
+
+          <a href="category.php?category=phone" class="blue-btn">Shop PearPhone</a>
+<a href="category.php?category=laptop" class="blue-btn">Shop PearBook</a>
+<a href="category.php?category=pad" class="blue-btn">Shop PearPad</a>
+
+
+    <a href="main.php" class="blue-btn">Browse Products</a>
+   <div class="product-grid">
+  <?php foreach ($products as $p): 
+    $img = firstVersionImage($p['category'], $p['version']);
+
+  ?>
+    <div class="product-card">
+      <?php if ($img): ?>
+        <img src="<?php echo htmlspecialchars($img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
+      <?php endif; ?>
+
+      <h3><?php echo htmlspecialchars($p['name']); ?></h3>
+      <p><?php echo htmlspecialchars($p['description']); ?></p>
+      <a href="product.php?id=<?php echo urlencode($p['id']); ?>" class="blue-btn">View</a>
+      
+
+    </div>
+  <?php endforeach; ?>
+</div>
+
+  </div>
+</body>
+</html>
