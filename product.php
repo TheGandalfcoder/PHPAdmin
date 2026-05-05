@@ -20,6 +20,24 @@ $stmt->close();
 
 if (!$p) die("Product not found");
 
+// Load reviews for this product
+$stmt = $db->prepare("
+    SELECT r.rating, r.comment, r.created_at, u.name AS reviewer
+    FROM reviews r
+    JOIN users u ON u.id = r.user_id
+    WHERE r.product_id = ?
+    ORDER BY r.created_at DESC
+");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$reviews = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+$avgRating = 0;
+if (!empty($reviews)) {
+    $avgRating = array_sum(array_column($reviews, 'rating')) / count($reviews);
+}
+
 // Load images from: img/<category>/<version>/
 $imgDirDisk = __DIR__ . "/img/{$p['category']}/{$p['version']}";
 $imgDirWeb  = "img/{$p['category']}/{$p['version']}";
@@ -56,6 +74,16 @@ if (is_dir($imgDirDisk)) {
     .btn{background:#0071e3; color:#fff; border:none; border-radius:10px; padding:10px 18px; font-size:16px; cursor:pointer; margin-top:16px;}
     .noimg{width:420px; max-width:100%; height:420px; border:1px dashed #cbd5e1; border-radius:12px;
            display:flex; align-items:center; justify-content:center; color:#64748b;}
+    .reviews-section{margin-top:40px;}
+    .reviews-section h2{font-size:20px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em;}
+    .reviews-avg{font-size:14px;color:#6b7280;margin:0 0 20px;}
+    .review-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:12px;}
+    .review-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+    .review-author{font-size:14px;font-weight:700;color:#1d1d1f;}
+    .review-date{font-size:12px;color:#9ca3af;}
+    .review-stars{color:#f59e0b;font-size:18px;letter-spacing:1px;}
+    .review-comment{font-size:14px;color:#374151;line-height:1.5;margin:0;}
+    .no-reviews{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;font-size:14px;}
   </style>
 </head>
 <body>
@@ -115,6 +143,29 @@ if (is_dir($imgDirDisk)) {
       document.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('selected', i===idx));
     }
   </script>
+
+  <div class="reviews-section">
+    <h2>Customer Reviews</h2>
+    <?php if (!empty($reviews)): ?>
+      <p class="reviews-avg">
+        <?= str_repeat('★', round($avgRating)) ?><?= str_repeat('☆', 5 - round($avgRating)) ?>
+        <?= number_format($avgRating, 1) ?> out of 5 (<?= count($reviews) ?> review<?= count($reviews) !== 1 ? 's' : '' ?>)
+      </p>
+      <?php foreach ($reviews as $rev): ?>
+        <div class="review-card">
+          <div class="review-header">
+            <span class="review-author"><?= e($rev['reviewer']) ?></span>
+            <span class="review-date"><?= e(date('j M Y', strtotime($rev['created_at']))) ?></span>
+          </div>
+          <div class="review-stars"><?= str_repeat('★', (int)$rev['rating']) ?><?= str_repeat('☆', 5 - (int)$rev['rating']) ?></div>
+          <p class="review-comment"><?= e($rev['comment']) ?></p>
+        </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="no-reviews">No reviews yet. Be the first to review this product after your order arrives.</div>
+    <?php endif; ?>
+  </div>
+
 </div>
 </body>
 </html>

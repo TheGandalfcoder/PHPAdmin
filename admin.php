@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $orderId   = $_POST['order_id'] ?? '';
         $newStatus = $_POST['new_status'] ?? '';
         $note      = trim($_POST['note'] ?? '');
-        $allowed   = ['pending', 'paid', 'dispatched', 'cancelled'];
+        $allowed   = ['pending', 'paid', 'dispatched', 'arrived', 'cancelled'];
 
         if ($orderId !== '' && in_array($newStatus, $allowed, true)) {
             $s = $db->prepare("SELECT status FROM orders WHERE order_id = ?");
@@ -78,6 +78,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $_SESSION['admin_flash'] = ['success' => 'Order status updated to ' . $newStatus . '.'];
+
+                if ($newStatus === 'arrived') {
+                    $se = $db->prepare("
+                        SELECT o.customer_email, o.customer_name, u.email AS user_email
+                        FROM orders o
+                        LEFT JOIN users u ON u.id = o.user_id
+                        WHERE o.order_id = ?
+                    ");
+                    $se->bind_param("s", $orderId);
+                    $se->execute();
+                    $od = $se->get_result()->fetch_assoc();
+                    $se->close();
+                    if ($od) {
+                        $triggerEmail = !empty($od['customer_email']) ? $od['customer_email'] : ($od['user_email'] ?? '');
+                        if ($triggerEmail !== '') {
+                            $_SESSION['admin_email_trigger'] = [
+                                'status'   => 'arrived',
+                                'email'    => $triggerEmail,
+                                'name'     => $od['customer_name'],
+                                'order_id' => $orderId,
+                            ];
+                        }
+                    }
+                }
             }
         }
     }
@@ -181,7 +205,7 @@ if ($section === 'orders') {
     $where  = "WHERE 1=1";
     $params = [];
     $types  = "";
-    $allowed = ['pending', 'paid', 'dispatched', 'cancelled'];
+    $allowed = ['pending', 'paid', 'dispatched', 'arrived', 'cancelled'];
 
     if ($filterStatus !== '' && in_array($filterStatus, $allowed, true)) {
         $where .= " AND o.status = ?"; $params[] = $filterStatus; $types .= "s";
@@ -312,6 +336,7 @@ function statusBadge(string $s): string {
         'pending'    => ['Pending',    '#92400e','#fef3c7'],
         'paid'       => ['Paid',       '#065f46','#d1fae5'],
         'dispatched' => ['Dispatched', '#1e40af','#dbeafe'],
+        'arrived'    => ['Arrived',    '#065f46','#d1fae5'],
         'cancelled'  => ['Cancelled',  '#991b1b','#fee2e2'],
     ];
     [$lbl, $fg, $bg] = $map[$s] ?? [$s, '#374151', '#f3f4f6'];
@@ -660,6 +685,7 @@ $navLinks = [
               <option value="pending"    <?= $filterStatus==='pending'?'selected':''?>>Pending</option>
               <option value="paid"       <?= $filterStatus==='paid'?'selected':''?>>Paid</option>
               <option value="dispatched" <?= $filterStatus==='dispatched'?'selected':''?>>Dispatched</option>
+              <option value="arrived"    <?= $filterStatus==='arrived'?'selected':''?>>Arrived</option>
               <option value="cancelled"  <?= $filterStatus==='cancelled'?'selected':''?>>Cancelled</option>
             </select>
           </div>
@@ -732,7 +758,7 @@ $navLinks = [
                       <input type="hidden" name="action" value="update_order_status">
                       <input type="hidden" name="order_id" value="<?= e($oid) ?>">
                       <select name="new_status" class="inline-select">
-                        <?php foreach (['pending','paid','dispatched','cancelled'] as $st): ?>
+                        <?php foreach (['pending','paid','dispatched','arrived','cancelled'] as $st): ?>
                           <option value="<?= $st ?>" <?= $o['status']===$st?'selected':'' ?>><?= ucfirst($st) ?></option>
                         <?php endforeach; ?>
                       </select>
@@ -1144,6 +1170,35 @@ document.getElementById('menuToggle')?.addEventListener('click', function() {
 })();
 <?php endif; ?>
 </script>
+
+<?php
+$emailTrigger = $_SESSION['admin_email_trigger'] ?? null;
+unset($_SESSION['admin_email_trigger']);
+if ($emailTrigger):
+?>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+(function(){
+  emailjs.init("PNXDYon0cBekaw3H8");
+
+  var toEmail   = <?= json_encode($emailTrigger['email']) ?>;
+  var toName    = <?= json_encode($emailTrigger['name']) ?>;
+  var orderId   = <?= json_encode($emailTrigger['order_id']) ?>;
+  var reviewUrl = window.location.origin + '/review.php?order_id=' + encodeURIComponent(orderId);
+
+  emailjs.send("service_1jwevr7", "template_pa86w3f", {
+    to_email:      toEmail,
+    customer_name: toName,
+    order_id:      orderId,
+    review_url:    reviewUrl
+  }).then(function(){
+    console.log('Arrived email sent');
+  }).catch(function(err){
+    console.error('Email failed', err);
+  });
+})();
+</script>
+<?php endif; ?>
 
 </body>
 </html>

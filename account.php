@@ -85,6 +85,7 @@ function statusBadge(string $status): string {
         'pending'    => ['Pending Payment', '#92400e', '#fef3c7'],
         'paid'       => ['Paid',            '#065f46', '#d1fae5'],
         'dispatched' => ['Dispatched',      '#1e40af', '#dbeafe'],
+        'arrived'    => ['Arrived',         '#065f46', '#d1fae5'],
         'cancelled'  => ['Cancelled',       '#991b1b', '#fee2e2'],
     ];
     [$label, $color, $bg] = $map[$status] ?? [$status, '#374151', '#f3f4f6'];
@@ -203,9 +204,13 @@ function statusBadge(string $status): string {
                     <?= e(date('j M Y', strtotime($ord['created_at']))) ?>
                   </span>
                 </div>
-                <div style="display:flex;align-items:center;gap:14px;">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
                   <?= statusBadge($ord['status']) ?>
                   <span class="order-total">£<?= number_format((float)$ord['total'], 2) ?></span>
+                  <a href="invoice.php?order_id=<?= urlencode($oid) ?>" style="font-size:13px;color:#0071e3;text-decoration:none;white-space:nowrap;">View Invoice</a>
+                  <?php if ($ord['status'] === 'arrived'): ?>
+                    <a href="review.php?order_id=<?= urlencode($oid) ?>" style="font-size:13px;color:#0071e3;text-decoration:none;white-space:nowrap;">Leave a Review</a>
+                  <?php endif; ?>
                 </div>
               </div>
               <details>
