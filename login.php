@@ -9,7 +9,7 @@ if (is_logged_in()) {
 
 $error = '';
 $next  = $_GET['next'] ?? $_POST['next'] ?? '';
-$allowedNext = ['home.php', 'main.php', 'cart.php', 'account.php', 'admin.php'];
+$allowedNext = ['home.php', 'main.php', 'cart.php', 'account.php', 'admin.php', 'review.php'];
 if (!in_array(strtok($next, '?'), $allowedNext, true)) {
     $next = 'home.php';
 }

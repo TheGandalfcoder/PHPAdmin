@@ -27,7 +27,7 @@ if (!$order) {
 $ownsOrder = ($order['user_id'] === $user['id'])
           || ($order['user_id'] === null && $order['customer_email'] === $user['email']);
 
-if (!$ownsOrder) {
+if (!$ownsOrder && !is_admin()) {
     http_response_code(403);
     exit('Access denied.');
 }

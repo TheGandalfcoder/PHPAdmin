@@ -93,12 +93,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($od) {
                         $triggerEmail = !empty($od['customer_email']) ? $od['customer_email'] : ($od['user_email'] ?? '');
                         if ($triggerEmail !== '') {
-                            $_SESSION['admin_email_trigger'] = [
-                                'status'   => 'arrived',
-                                'email'    => $triggerEmail,
-                                'name'     => $od['customer_name'],
-                                'order_id' => $orderId,
-                            ];
+                            $protocol  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                            $host      = $_SERVER['HTTP_HOST'];
+                            $dir       = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+                            $reviewUrl = $protocol . '://' . $host . $dir . '/review.php?order_id=' . urlencode($orderId);
+
+                            $payload = json_encode([
+                                'service_id'      => 'service_1jwevr7',
+                                'template_id'     => 'template_pa86w3f',
+                                'user_id'         => 'PNXDYon0cBekaw3H8',
+                                'template_params' => [
+                                    'to_email'      => $triggerEmail,
+                                    'customer_name' => $od['customer_name'],
+                                    'order_id'      => $orderId,
+                                    'review_url'    => $reviewUrl,
+                                ],
+                            ]);
+
+                            $ch = curl_init('https://api.emailjs.com/api/v1.0/email/send');
+                            curl_setopt($ch, CURLOPT_POST, true);
+                            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                                'Content-Type: application/json',
+                                'Origin: ' . $protocol . '://' . $host,
+                            ]);
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                            curl_exec($ch);
+                            curl_close($ch);
                         }
                     }
                 }
@@ -1171,34 +1193,6 @@ document.getElementById('menuToggle')?.addEventListener('click', function() {
 <?php endif; ?>
 </script>
 
-<?php
-$emailTrigger = $_SESSION['admin_email_trigger'] ?? null;
-unset($_SESSION['admin_email_trigger']);
-if ($emailTrigger):
-?>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
-(function(){
-  emailjs.init("PNXDYon0cBekaw3H8");
-
-  var toEmail   = <?= json_encode($emailTrigger['email']) ?>;
-  var toName    = <?= json_encode($emailTrigger['name']) ?>;
-  var orderId   = <?= json_encode($emailTrigger['order_id']) ?>;
-  var reviewUrl = window.location.href.replace(/admin\.php.*$/, '') + 'review.php?order_id=' + encodeURIComponent(orderId);
-
-  emailjs.send("service_1jwevr7", "template_pa86w3f", {
-    to_email:      toEmail,
-    customer_name: toName,
-    order_id:      orderId,
-    review_url:    reviewUrl
-  }).then(function(){
-    console.log('Arrived email sent');
-  }).catch(function(err){
-    console.error('Email failed', err);
-  });
-})();
-</script>
-<?php endif; ?>
 
 </body>
 </html>
