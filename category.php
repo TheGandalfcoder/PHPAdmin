@@ -5,15 +5,16 @@ csrf_token();
 
 $db = db();
 
-$allowed = ['phone','pad','laptop'];// allowed categories
-$category = $_GET['category'] ?? '';// category input
-if (!in_array($category, $allowed, true)) die("Invalid category");//  category validation
-//filter inputs
-$q       = trim($_GET['q'] ?? '');                 // name search
-$min     = trim($_GET['min'] ?? '');               // min price
-$max     = trim($_GET['max'] ?? '');               // max price
-$model   = trim($_GET['model'] ?? '');             // version filter
-$sort    = $_GET['sort'] ?? 'version_desc';        // sorting
+$allowed = ['phone','pad','laptop'];
+$category = $_GET['category'] ?? '';
+if (!in_array($category, $allowed, true)) die("Invalid category");
+
+// read filter values from the query string
+$q       = trim($_GET['q'] ?? '');
+$min     = trim($_GET['min'] ?? '');
+$max     = trim($_GET['max'] ?? '');
+$model   = trim($_GET['model'] ?? '');
+$sort    = $_GET['sort'] ?? 'version_desc';
 
 $minNum = ($min !== '' && is_numeric($min)) ? (float)$min : null;
 $maxNum = ($max !== '' && is_numeric($max)) ? (float)$max : null;
@@ -54,7 +55,7 @@ if ($modelNum !== null) {
   $types .= "i";
 }
 
-// sort whitelist
+// only allow known sort values to prevent sql injection
 $orderBy = "ORDER BY version DESC";
 if ($sort === 'price_asc') $orderBy = "ORDER BY price ASC";
 if ($sort === 'price_desc') $orderBy = "ORDER BY price DESC";
@@ -75,7 +76,7 @@ $res = $stmt->get_result();
 $items = $res->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// --------- IMAGE HELPER ----------
+// returns the first image path found in img/<category>/<version>/
 function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
@@ -91,7 +92,6 @@ function firstVersionImage($category, $version){
 
 $title = strtoupper($category);
 
-// For "Clear filters" link
 $clearUrl = "category.php?category=" . urlencode($category);
 ?>
 <!doctype html>
@@ -115,7 +115,6 @@ $clearUrl = "category.php?category=" . urlencode($category);
 
   <div class="layout">
 
-    <!-- LEFT FILTER PANEL -->
     <aside class="panel">
       <h3>Filter</h3>
 
@@ -163,7 +162,6 @@ $clearUrl = "category.php?category=" . urlencode($category);
       </div>
     </aside>
 
-    <!-- RIGHT GRID -->
     <main>
       <?php if (empty($items)): ?>
         <p>No products found.</p>

@@ -2,35 +2,35 @@
 require_once 'db.php';
 require_once 'auth.php';
 
-function firstVersionImage($category, $version){// helper: first image in img/<category>/<version>/
+// returns the first image path found in img/<category>/<version>/
+function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
   if (!is_dir($dirDisk)) return null;
 
-  $found = glob($dirDisk . "/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", GLOB_BRACE);// find images
+  $found = glob($dirDisk . "/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", GLOB_BRACE);
   if (empty($found)) return null;
 
-  natsort($found);// natural sort
+  natsort($found);
   $found = array_values($found);
   return $dirWeb . "/" . basename($found[0]);
 }
 
 $orderId = $_GET['order_id'] ?? '';
-if ($orderId === '') { die('Missing order_id'); }// order_id check
+if ($orderId === '') { die('Missing order_id'); }
 
 $db = db();
 
-// Load order
-$stmt = $db->prepare("SELECT * FROM orders WHERE order_id = ?");// order fetch
+$stmt = $db->prepare("SELECT * FROM orders WHERE order_id = ?");
 $stmt->bind_param("s", $orderId);
 $stmt->execute();
 $orderRes = $stmt->get_result();
-$order = $orderRes->fetch_assoc();// fetch order data
+$order = $orderRes->fetch_assoc();
 $stmt->close();
 
 if (!$order) { die('Order not found'); }
 
-// Load items with product names/prices + category/version for images
+// load items with names, prices, and image paths
 $stmt = $db->prepare("
   SELECT
     oi.product_id,
@@ -54,7 +54,7 @@ while ($row = $itemsRes->fetch_assoc()) {
 $stmt->close();
 $db->close();
 
-// Build invoice HTML (table)
+// build the invoice table as HTML so it can be embedded in the page and emailed
 $vatRate = 0.20;
 
 $invoiceHtml = '<table class="invoice-table">';
@@ -99,7 +99,7 @@ $invoiceHtml .= '</table>';
 
 $total = $grandTotal;
 
-// Address block
+// build the delivery address as a single escaped string
 $address = e($order['address_line1']) . '<br>';
 if (!empty($order['address_line2'])) $address .= e($order['address_line2']) . '<br>';
 $address .= e($order['city']) . '<br>' . e($order['postcode']) . '<br>' . e($order['country']);

@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $s->execute();
                 $s->close();
 
-                // Restore stock when cancelling
+                // restore stock when an order is cancelled
                 if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
                     $si  = $db->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
                     $si->bind_param("s", $orderId);
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $si->close(); $su->close();
                 }
-                // Deduct stock when un-cancelling
+                // deduct stock again if an order is moved back from cancelled
                 if ($oldStatus === 'cancelled' && $newStatus !== 'cancelled') {
                     $si  = $db->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
                     $si->bind_param("s", $orderId);
@@ -384,7 +384,6 @@ $navLinks = [
 </head>
 <body>
 
-<!-- Mobile top bar -->
 <div class="mob-bar">
   <button id="menuToggle" aria-label="Toggle menu">&#9776;</button>
   <span>Pear Admin</span>
@@ -392,7 +391,6 @@ $navLinks = [
 
 <div class="admin-wrap">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
       <div class="sb-brand__dot">P</div>
@@ -430,7 +428,6 @@ $navLinks = [
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
   <main class="main">
 
     <?php if ($flash): ?>

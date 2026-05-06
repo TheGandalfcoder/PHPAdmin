@@ -4,7 +4,7 @@ require_once 'auth.php';
 
 $db = db();
 
-// Get 1 per category (latest version)
+// fetch one product per category using the highest version number
 $products = [];
 $sql = "
   SELECT p.*

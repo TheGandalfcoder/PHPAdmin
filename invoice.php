@@ -12,7 +12,7 @@ if ($orderId === '') {
 $db   = db();
 $user = current_user();
 
-// Load order — must belong to this user or match their email
+// load the order — ownership is checked against user id or email
 $stmt = $db->prepare("SELECT * FROM orders WHERE order_id = ?");
 $stmt->bind_param("s", $orderId);
 $stmt->execute();
@@ -24,7 +24,7 @@ if (!$order) {
     exit('Order not found.');
 }
 
-// Access check — must be the order owner or an admin
+// deny access unless the user placed the order or is an admin
 $ownsOrder = ($order['user_id'] === $user['id'])
           || ($order['user_id'] === null && $order['customer_email'] === $user['email']);
 
@@ -33,7 +33,7 @@ if (!$ownsOrder && !is_admin()) {
     exit('Access denied.');
 }
 
-// Load order items
+// load the line items for this order
 $stmt = $db->prepare("
     SELECT oi.quantity, p.name, p.price, p.category, p.version, p.id AS product_id
     FROM order_items oi

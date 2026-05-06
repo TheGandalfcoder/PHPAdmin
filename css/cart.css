@@ -1,21 +1,113 @@
-body{font-family:Arial,Helvetica,sans-serif;max-width:1100px;margin:auto;padding:18px;}
-a{color:#0071e3;text-decoration:none;}
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 1100px;
+    margin: auto;
+    padding: 18px;
+}
 
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
-.card{border:1px solid #eef2f6;border-radius:12px;padding:14px;margin-top:14px;}
-.item{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #eef2f6;}
-.item:last-child{border-bottom:none;}
-img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid #eef2f6;}
-.name{font-weight:700;}
-.small{color:#444;font-size:14px;}
-.price{color:#0071e3;font-weight:700;}
-button{background:#0071e3;border:0;color:#fff;padding:8px 10px;border-radius:8px;cursor:pointer;}
-.danger{background:#ff4d4d;}
-input,select{font-family:inherit;padding:7px 8px;}
+a {
+    color: #0071e3;
+    text-decoration: none;
+}
 
-.totals{min-width:240px;}
-.totals .line{display:flex;justify-content:space-between;gap:12px;margin:6px 0;}
-.totals .label{color:#444;font-size:14px;}
-.totals .value{font-weight:700;}
-.totals .grand{font-weight:800;font-size:20px;}
-.muted{color:#666;font-size:13px;}
+/* top bar row */
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* cart container */
+.card {
+    border: 1px solid #eef2f6;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 14px;
+}
+
+/* individual cart item row */
+.item {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.item:last-child {
+    border-bottom: none;
+}
+
+img {
+    width: 84px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #eef2f6;
+}
+
+.name {
+    font-weight: 700;
+}
+
+.small {
+    color: #444;
+    font-size: 14px;
+}
+
+.price {
+    color: #0071e3;
+    font-weight: 700;
+}
+
+button {
+    background: #0071e3;
+    border: 0;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.danger {
+    background: #ff4d4d;
+}
+
+input,
+select {
+    font-family: inherit;
+    padding: 7px 8px;
+}
+
+/* order totals block */
+.totals {
+    min-width: 240px;
+}
+
+.totals .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 6px 0;
+}
+
+.totals .label {
+    color: #444;
+    font-size: 14px;
+}
+
+.totals .value {
+    font-weight: 700;
+}
+
+.totals .grand {
+    font-weight: 800;
+    font-size: 20px;
+}
+
+.muted {
+    color: #666;
+    font-size: 13px;
+}

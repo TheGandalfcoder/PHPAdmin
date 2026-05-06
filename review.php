@@ -12,7 +12,7 @@ if ($orderId === '') {
     exit('Missing order ID.');
 }
 
-// Load order — must be arrived and belong to this user
+// load the order — only allows reviews if status is arrived and the user owns it
 $stmt = $db->prepare("SELECT * FROM orders WHERE order_id = ?");
 $stmt->bind_param("s", $orderId);
 $stmt->execute();
@@ -37,7 +37,7 @@ if ($order['status'] !== 'arrived') {
     exit('Reviews can only be left for orders that have arrived.');
 }
 
-// Load products from this order
+// load the products in this order so we can show a review form for each one
 $stmt = $db->prepare("
     SELECT oi.product_id, oi.quantity, p.name, p.category, p.version
     FROM order_items oi
@@ -49,7 +49,7 @@ $stmt->execute();
 $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Check which products already have a review for this order
+// find out which products have already been reviewed for this order
 $reviewed = [];
 foreach ($products as $prod) {
     $stmt = $db->prepare("SELECT id FROM reviews WHERE product_id = ? AND order_id = ?");

@@ -10,7 +10,7 @@ unset($_SESSION['flash']);
 $db = db();
 
 $productsById = [];
-$res = $db->query("SELECT id, category, version, name, price, description FROM products");
+$res = $db->query("SELECT id, category, version, name, price, description, stock FROM products");
 if ($res) {
   while ($row = $res->fetch_assoc()) {
     $row['price'] = (float)$row['price'];
@@ -20,7 +20,6 @@ if ($res) {
 }
 $db->close();
 
-// Cart
 $cart = $_SESSION['cart'] ?? [];
 if (!is_array($cart)) $cart = [];
 
@@ -110,13 +109,17 @@ $grandTotal = totalWithVat($subtotal, $vatRate);
       <div class="small">Your cart is empty.</div>
     <?php else: ?>
 
-      <?php foreach ($cart as $id => $qty):
-        $id = (string)$id;
-        $qty = (int)$qty;
-        if ($qty <= 0) continue;
-        if (!isset($productsById[$id])) continue;
-        $p = $productsById[$id];
-        $thumb = firstVersionImage($p['category'], $p['version']);
+      <?php
+        $hasOutOfStock = false;
+        foreach ($cart as $id => $qty):
+          $id = (string)$id;
+          $qty = (int)$qty;
+          if ($qty <= 0) continue;
+          if (!isset($productsById[$id])) continue;
+          $p = $productsById[$id];
+          $outOfStock = ((int)$p['stock']) <= 0;
+          if ($outOfStock) $hasOutOfStock = true;
+          $thumb = firstVersionImage($p['category'], $p['version']);
       ?>
         <div class="item">
           <?php if ($thumb): ?>
@@ -128,6 +131,9 @@ $grandTotal = totalWithVat($subtotal, $vatRate);
           <div style="flex:1;">
             <div class="name">
               <a href="product.php?id=<?php echo (int)$p['id']; ?>"><?php echo e($p['name']); ?></a>
+              <?php if ($outOfStock): ?>
+                <span style="color:#b91c1c;font-size:11px;font-weight:700;margin-left:6px;">OUT OF STOCK</span>
+              <?php endif; ?>
             </div>
             <div class="small">
               £<?php echo number_format($p['price'],2); ?> × <?php echo $qty; ?> =
@@ -201,8 +207,7 @@ $grandTotal = totalWithVat($subtotal, $vatRate);
               <input name="email" placeholder="Email (required for invoice)"
                      value="<?php echo e(current_user()['email'] ?? ''); ?>">
 
-              <!-- address fields shown only once the user has typed their name -->
-              <div id="addressBlock" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid #eef2f6;">
+              <div id="addressBlock" style="margin-top:6px; padding-top:6px; border-top:1px solid #eef2f6;">
                 <div class="small" style="margin-bottom:6px;">Delivery address</div>
 
                 <input name="address_line1" placeholder="Address line 1" required>
@@ -222,24 +227,15 @@ $grandTotal = totalWithVat($subtotal, $vatRate);
             </div>
 
             <div style="display:flex; flex-direction:column; gap:8px;">
-              <button type="submit">Checkout</button>
+              <?php if ($hasOutOfStock): ?>
+                <button type="submit" disabled title="Remove out-of-stock items before checking out"
+                        style="opacity:.5;cursor:not-allowed;">Checkout</button>
+                <div class="small" style="color:#b91c1c;">Remove out-of-stock items before checking out.</div>
+              <?php else: ?>
+                <button type="submit">Checkout</button>
+              <?php endif; ?>
             </div>
           </form>
-
-          <script>
-            (function () {
-              const nameInput = document.getElementById('nameInput');
-              const addressBlock = document.getElementById('addressBlock');
-
-              function toggleAddress() {
-                const hasName = nameInput.value.trim().length > 0;
-                addressBlock.style.display = hasName ? 'block' : 'none';
-              }
-
-              nameInput.addEventListener('input', toggleAddress);
-              toggleAddress();
-            })();
-          </script>
 
         </div>
       </div>
