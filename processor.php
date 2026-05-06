@@ -42,8 +42,18 @@ switch ($action) {
     case 'add': {
         $id = $_POST['id'] ?? '';
         if ($id !== '' && ctype_digit((string)$id)) {
-            $cart[$id] = ($cart[$id] ?? 0) + 1;
-            $_SESSION['flash'] = ['success' => 'Item added to cart.'];
+            $db   = db();
+            $s    = $db->prepare("SELECT stock FROM products WHERE id = ? LIMIT 1");
+            $s->bind_param("i", $id);
+            $s->execute();
+            $row  = $s->get_result()->fetch_assoc();
+            $s->close();
+            if (!$row || (int)$row['stock'] <= 0) {
+                $_SESSION['flash'] = ['errors' => ['That item is out of stock.']];
+            } else {
+                $cart[$id] = ($cart[$id] ?? 0) + 1;
+                $_SESSION['flash'] = ['success' => 'Item added to cart.'];
+            }
         } else {
             $_SESSION['flash'] = ['errors' => ['Invalid product.']];
         }
@@ -130,15 +140,25 @@ switch ($action) {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $types        = str_repeat('i', count($ids));
 
-        $stmt = $db->prepare("SELECT id, price FROM products WHERE id IN ($placeholders)");
+        $stmt = $db->prepare("SELECT id, price, stock FROM products WHERE id IN ($placeholders)");
         $stmt->bind_param($types, ...$ids);
         $stmt->execute();
         $res      = $stmt->get_result();
         $priceMap = [];
+        $stockMap = [];
         while ($row = $res->fetch_assoc()) {
             $priceMap[(string)$row['id']] = (float)$row['price'];
+            $stockMap[(string)$row['id']] = (int)$row['stock'];
         }
         $stmt->close();
+
+        // block the order if any item has no stock left
+        foreach ($items as $it) {
+            if (($stockMap[$it['id']] ?? 0) <= 0) {
+                $_SESSION['flash'] = ['errors' => ['One or more items in your cart are out of stock. Remove them before checking out.']];
+                redirectTo($returnTo);
+            }
+        }
 
         $total = 0.0;
         foreach ($items as $it) {
