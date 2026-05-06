@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// shorthand for escaping output — used everywhere in templates
 if (!function_exists('e')) {
     function e(string $s): string {
         return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -37,6 +38,7 @@ function require_admin(): void {
     }
 }
 
+// regenerate the session id on login to prevent session fixation attacks
 function login_set_user(array $row): void {
     session_regenerate_id(true);
     $_SESSION['auth_user'] = [

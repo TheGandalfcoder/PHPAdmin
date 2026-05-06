@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Load orders (by user_id, or by email for guest orders placed with the same email)
+// fetch orders placed while logged in, plus any guest orders using the same email address
 $orders = [];
 $stmt = $db->prepare("
     SELECT order_id, created_at, total, status, city, country
@@ -59,7 +59,7 @@ $r = $stmt->get_result();
 while ($row = $r->fetch_assoc()) $orders[] = $row;
 $stmt->close();
 
-// Load items for each order
+// load the line items for each order so we can show the product breakdown
 $orderItems = [];
 foreach ($orders as $ord) {
     $oid  = $ord['order_id'];
@@ -158,7 +158,6 @@ function statusBadge(string $status): string {
 
   <div class="grid">
 
-    <!-- Account details -->
     <aside class="card">
       <h2>Account Details</h2>
 
@@ -182,7 +181,6 @@ function statusBadge(string $status): string {
       </form>
     </aside>
 
-    <!-- Order history -->
     <main>
       <div class="card">
         <h2>Order History (<?= count($orders) ?>)</h2>

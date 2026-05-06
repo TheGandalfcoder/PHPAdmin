@@ -8,9 +8,7 @@ $report  = $_GET['report']  ?? 'products';
 $flash   = $_SESSION['admin_flash'] ?? null;
 unset($_SESSION['admin_flash']);
 
-// ---------------------------------------------------------------------------
-// POST — handle all admin form submissions
-// ---------------------------------------------------------------------------
+// handle all admin form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) {
         $_SESSION['admin_flash'] = ['error' => 'Invalid form token.'];
@@ -180,15 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// ---------------------------------------------------------------------------
-// GET — load data for the current section
-// ---------------------------------------------------------------------------
+// load data for the current section
 $db = db();
 
 $pendingCount  = (int)$db->query("SELECT COUNT(*) c FROM orders WHERE status='pending'")->fetch_assoc()['c'];
 $lowStockCount = (int)$db->query("SELECT COUNT(*) c FROM products WHERE stock < 10")->fetch_assoc()['c'];
 
-// ---- OVERVIEW ----
+// overview section data
 $totalRevenue = $monthRevenue = $totalOrders = $newCustomers = 0;
 $recentOrders = $lowStockItems = $chartLabels = $chartValues = [];
 
@@ -214,7 +210,7 @@ if ($section === 'overview') {
     while ($row = $r->fetch_assoc()) $lowStockItems[] = $row;
 }
 
-// ---- ORDERS ----
+// orders section data
 $ordersData = $orderItems = [];
 $filterStatus = $filterFrom = $filterTo = $filterSearch = '';
 
@@ -264,14 +260,14 @@ if ($section === 'orders') {
     }
 }
 
-// ---- INVENTORY ----
+// inventory section data
 $inventory = [];
 if ($section === 'inventory') {
     $r = $db->query("SELECT id, category, version, name, price, stock FROM products ORDER BY category, version DESC, name");
     while ($row = $r->fetch_assoc()) $inventory[] = $row;
 }
 
-// ---- REPORTS ----
+// reports section data
 $productRevenue = $timelineData = $unprocessed = [];
 $tLabels = $tValues = $tOrders = [];
 $fromDate = $toDate = '';
@@ -323,7 +319,7 @@ if ($section === 'reports') {
     }
 }
 
-// ---- CUSTOMERS ----
+// customers section data
 $customers = $editCustomer = null;
 $editId = 0;
 
@@ -350,9 +346,7 @@ if ($section === 'customers') {
     while ($row = $r->fetch_assoc()) $customers[] = $row;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// helper functions used in the HTML below
 function statusBadge(string $s): string {
     $map = [
         'pending'    => ['Pending',    '#92400e','#fef3c7'],
@@ -578,9 +572,6 @@ $navLinks = [
       </div>
     <?php endif; ?>
 
-    <?php /* ================================================================
-              OVERVIEW
-           ================================================================ */ ?>
     <?php if ($section === 'overview'): ?>
 
       <div class="page-hd">
@@ -621,7 +612,6 @@ $navLinks = [
         </div>
       </div>
 
-      <!-- Revenue chart -->
       <div class="card">
         <div class="card__head">
           <h2>Revenue — Last 30 Days</h2>
@@ -633,7 +623,6 @@ $navLinks = [
 
       <div class="two-col">
 
-        <!-- Recent orders -->
         <div class="card">
           <div class="card__head">
             <h2>Recent Orders</h2>
@@ -660,7 +649,6 @@ $navLinks = [
           <?php endif; ?>
         </div>
 
-        <!-- Low stock -->
         <div class="card">
           <div class="card__head">
             <h2>Low Stock Alerts</h2>
@@ -686,9 +674,6 @@ $navLinks = [
 
       </div>
 
-    <?php /* ================================================================
-              ORDERS
-           ================================================================ */ ?>
     <?php elseif ($section === 'orders'): ?>
 
       <div class="page-hd">
@@ -697,7 +682,6 @@ $navLinks = [
       </div>
 
       <div class="card">
-        <!-- Filter bar -->
         <form method="get" action="admin.php" class="filter-bar">
           <input type="hidden" name="section" value="orders">
           <div>
@@ -794,9 +778,6 @@ $navLinks = [
         <?php endif; ?>
       </div>
 
-    <?php /* ================================================================
-              INVENTORY
-           ================================================================ */ ?>
     <?php elseif ($section === 'inventory'): ?>
 
       <div class="page-hd">
@@ -859,9 +840,6 @@ $navLinks = [
         <?php endif; ?>
       </div>
 
-    <?php /* ================================================================
-              REPORTS
-           ================================================================ */ ?>
     <?php elseif ($section === 'reports'): ?>
 
       <div class="page-hd">
@@ -1007,9 +985,6 @@ $navLinks = [
 
       <?php endif; // report ?>
 
-    <?php /* ================================================================
-              CUSTOMERS
-           ================================================================ */ ?>
     <?php elseif ($section === 'customers'): ?>
 
       <div class="page-hd">

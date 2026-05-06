@@ -9,6 +9,7 @@ if (is_logged_in()) {
 
 $error = '';
 $next  = $_GET['next'] ?? $_POST['next'] ?? '';
+// only redirect to pages we own after login — prevents open redirect attacks
 $allowedNext = ['home.php', 'main.php', 'cart.php', 'account.php', 'admin.php', 'review.php'];
 if (!in_array(strtok($next, '?'), $allowedNext, true)) {
     $next = 'home.php';

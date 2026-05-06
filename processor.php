@@ -159,6 +159,8 @@ switch ($action) {
             $email = $loggedInUser['email'];
         }
 
+        // wrap the order insert, item inserts, and stock deductions in one transaction
+        // so a failure at any step rolls everything back cleanly
         try {
             $db->begin_transaction();
 

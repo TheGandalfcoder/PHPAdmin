@@ -1,4 +1,5 @@
 <?php
+// reuses the same connection for the whole request rather than opening a new one each time
 function db(): mysqli {
     static $conn = null;
     if ($conn === null) {

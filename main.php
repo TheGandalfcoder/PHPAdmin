@@ -10,24 +10,25 @@ $cart = $_SESSION['cart'] ?? [];
 if (!is_array($cart)) $cart = [];
 function cartCount($cart){ return array_sum(array_values($cart)); }
 
-// DB
 $db = db();
 
-// filter inputs (GET)
+// read filter values from the query string
 $q       = trim($_GET['q'] ?? '');
 $min     = trim($_GET['min'] ?? '');
 $max     = trim($_GET['max'] ?? '');
-$cat     = trim($_GET['category'] ?? ''); // '' means all
-$model   = trim($_GET['model'] ?? '');    // version
+$cat     = trim($_GET['category'] ?? ''); // empty string means all categories
+$model   = trim($_GET['model'] ?? '');    // model maps to the version column
 $sort    = $_GET['sort'] ?? 'version_desc';
-// validate category
+
+// reject any category value not in the known list
 $allowedCats = ['','phone','pad','laptop'];
 if (!in_array($cat, $allowedCats, true)) $cat = '';
-// validate numeric inputs
-$minNum = ($min !== '' && is_numeric($min)) ? (float)$min : null;
-$maxNum = ($max !== '' && is_numeric($max)) ? (float)$max : null;
+
+$minNum   = ($min !== '' && is_numeric($min)) ? (float)$min : null;
+$maxNum   = ($max !== '' && is_numeric($max)) ? (float)$max : null;
 $modelNum = ($model !== '' && ctype_digit($model)) ? (int)$model : null;
-// get available models (versions)
+
+// populate the model dropdown — scoped to the selected category if one is chosen
 $models = [];
 if ($cat === '') {
   $resM = $db->query("SELECT DISTINCT version FROM products ORDER BY version DESC");
@@ -35,7 +36,7 @@ if ($cat === '') {
     while ($row = $resM->fetch_assoc()) $models[] = (int)$row['version'];
     $resM->free();
   }
-} else {// specific category
+} else {
   $stmtM = $db->prepare("SELECT DISTINCT version FROM products WHERE category=? ORDER BY version DESC");
   $stmtM->bind_param("s", $cat);
   $stmtM->execute();
@@ -43,60 +44,58 @@ if ($cat === '') {
   while ($row = $resM->fetch_assoc()) $models[] = (int)$row['version'];
   $stmtM->close();
 }
-// build filtered query
-$where = "WHERE 1=1";
+
+$where  = "WHERE 1=1";
 $params = [];
 $types  = "";
-// add filters
+
 if ($cat !== '') {
   $where .= " AND category = ?";
   $params[] = $cat;
   $types .= "s";
-}// category filter
+}
 if ($q !== '') {
   $where .= " AND name LIKE ?";
   $params[] = "%$q%";
   $types .= "s";
-}// name search
+}
 if ($minNum !== null) {
   $where .= " AND price >= ?";
   $params[] = $minNum;
   $types .= "d";
-}// min price
+}
 if ($maxNum !== null) {
   $where .= " AND price <= ?";
   $params[] = $maxNum;
   $types .= "d";
-}// max price
+}
 if ($modelNum !== null) {
   $where .= " AND version = ?";
   $params[] = $modelNum;
   $types .= "i";
 }
 
-// sort whitelist (same vibe as category.php)
-$orderBy = "ORDER BY category ASC, version DESC";// default
-if ($sort === 'price_asc')    $orderBy = "ORDER BY price ASC";// price low to high
-if ($sort === 'price_desc')   $orderBy = "ORDER BY price DESC";// price high to low
+// only allow known sort values to prevent SQL injection
+$orderBy = "ORDER BY category ASC, version DESC";
+if ($sort === 'price_asc')    $orderBy = "ORDER BY price ASC";
+if ($sort === 'price_desc')   $orderBy = "ORDER BY price DESC";
 if ($sort === 'name_asc')     $orderBy = "ORDER BY name ASC";
 if ($sort === 'name_desc')    $orderBy = "ORDER BY name DESC";
 if ($sort === 'version_asc')  $orderBy = "ORDER BY category ASC, version ASC";
 if ($sort === 'version_desc') $orderBy = "ORDER BY category ASC, version DESC";
-// final SQL
-$sql = "SELECT id, category, version, name, price, description 
+
+$sql = "SELECT id, category, version, name, price, description
         FROM products
         $where
         $orderBy";
-// prepare and execute
 $stmt = $db->prepare($sql);
 if ($types !== "") $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $res = $stmt->get_result();
 $products = $res->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-// close DB
 
-// helper: get first image for category/version — returns ['web'=>..., 'disk'=>...]
+// returns the web path and disk path for the first image in img/<category>/<version>/
 function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
@@ -177,7 +176,6 @@ $clearUrl = "main.php";
 
   <div class="layout">
 
-    <!-- LEFT FILTER PANEL (category.php style) -->
     <aside class="panel">
       <h3>Filter</h3>
 
@@ -227,7 +225,6 @@ $clearUrl = "main.php";
       </form>
     </aside>
 
-    <!-- RIGHT GRID -->
     <main>
       <?php if (empty($products)): ?>
         <p>No products found.</p>

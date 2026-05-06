@@ -3,13 +3,12 @@ require_once 'db.php';
 require_once 'auth.php';
 csrf_token();
 
+// read and clear any flash message from the previous request
 $flash = $_SESSION['flash'] ?? null;
-unset($_SESSION['flash']);//  flash message handling
+unset($_SESSION['flash']);
 
-// DB
 $db = db();
 
-// Load products keyed by id
 $productsById = [];
 $res = $db->query("SELECT id, category, version, name, price, description FROM products");
 if ($res) {
@@ -25,7 +24,7 @@ $db->close();
 $cart = $_SESSION['cart'] ?? [];
 if (!is_array($cart)) $cart = [];
 
-function cartCount($cart){// count items in cart
+function cartCount($cart){
   return array_sum(array_map('intval', array_values($cart)));
 }
 
@@ -38,36 +37,35 @@ function cartSubtotal($cart, $productsById){
     if (!isset($productsById[$id])) continue;
     $sum += $productsById[$id]['price'] * $q;
   }
-  // keep money sane
   return round($sum, 2);
 }
 
-function vatAmount($subtotal, $rate = 0.20){// vat amount calc
+function vatAmount($subtotal, $rate = 0.20){
   return round(((float)$subtotal) * (float)$rate, 2);
 }
 
-function totalWithVat($subtotal, $rate = 0.20){// total with vat calc
+function totalWithVat($subtotal, $rate = 0.20){
   return round(((float)$subtotal) + (((float)$subtotal) * (float)$rate), 2);
 }
 
-function firstVersionImage($category, $version){// helper: first image in img/<category>/<version>/
+// returns the path to the first image found in img/<category>/<version>/
+function firstVersionImage($category, $version){
   $dirDisk = __DIR__ . "/img/$category/$version";
   $dirWeb  = "img/$category/$version";
-  if (!is_dir($dirDisk)) return null;// directory check
+  if (!is_dir($dirDisk)) return null;
 
-  $found = glob($dirDisk . "/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", GLOB_BRACE);// find images
+  $found = glob($dirDisk . "/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}", GLOB_BRACE);
   if (empty($found)) return null;
 
-  natsort($found);// natural sort
+  natsort($found);
   $found = array_values($found);
   return $dirWeb . "/" . basename($found[0]);
 }
 
-// VAT calcs
 $vatRate    = 0.20;
-$subtotal   = cartSubtotal($cart, $productsById);// subtotal calc
-$vat        = vatAmount($subtotal, $vatRate);// // vat amount calc
-$grandTotal = totalWithVat($subtotal, $vatRate);  // grand total calc
+$subtotal   = cartSubtotal($cart, $productsById);
+$vat        = vatAmount($subtotal, $vatRate);
+$grandTotal = totalWithVat($subtotal, $vatRate);
 ?>
 <!doctype html>
 <html lang="en">
@@ -216,18 +214,13 @@ $grandTotal = totalWithVat($subtotal, $vatRate);  // grand total calc
             <input type="hidden" name="return_to" value="cart.php">
             <input type="hidden" name="action" value="checkout">
 
-            <!-- If your processor.php currently calculates from DB prices, make sure it also applies VAT there.
-                 If it doesn't, you can pass totals like this (optional):
-                 <input type="hidden" name="vat_rate" value="<?php echo e((string)$vatRate); ?>">
-            -->
-
             <div style="display:flex; flex-direction:column; gap:8px;">
               <input name="name" id="nameInput" placeholder="Your name" required
                      value="<?php echo e(current_user()['name'] ?? ''); ?>">
               <input name="email" placeholder="Email (required for invoice)"
                      value="<?php echo e(current_user()['email'] ?? ''); ?>">
 
-              <!-- Address block: hidden until name entered -->
+              <!-- address fields shown only once the user has typed their name -->
               <div id="addressBlock" style="display:none; margin-top:6px; padding-top:6px; border-top:1px solid #eef2f6;">
                 <div class="small" style="margin-bottom:6px;">Delivery address</div>
 

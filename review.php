@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
+            // INSERT IGNORE means a duplicate review (same product + order) is silently skipped
             $stmt = $db->prepare("
                 INSERT IGNORE INTO reviews (product_id, order_id, user_id, rating, comment)
                 VALUES (?, ?, ?, ?, ?)

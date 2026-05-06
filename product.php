@@ -3,14 +3,11 @@ require_once 'db.php';
 require_once 'auth.php';
 csrf_token();
 
-// DB
 $db = db();
 
-// Validate id
 $id = $_GET['id'] ?? '';
 if (!ctype_digit($id)) die("Invalid product");
 
-// Load product
 $stmt = $db->prepare("SELECT id, category, version, name, price, description FROM products WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -20,7 +17,7 @@ $stmt->close();
 
 if (!$p) die("Product not found");
 
-// Load reviews for this product
+// load all approved reviews with the reviewer's name joined from users
 $stmt = $db->prepare("
     SELECT r.rating, r.comment, r.created_at, u.name AS reviewer
     FROM reviews r
@@ -38,7 +35,7 @@ if (!empty($reviews)) {
     $avgRating = array_sum(array_column($reviews, 'rating')) / count($reviews);
 }
 
-// Load images from: img/<category>/<version>/
+// images are stored under img/<category>/<version>/ on disk
 $imgDirDisk = __DIR__ . "/img/{$p['category']}/{$p['version']}";
 $imgDirWeb  = "img/{$p['category']}/{$p['version']}";
 $images = [];
@@ -119,7 +116,6 @@ if (is_dir($imgDirDisk)) {
     <div class="card">
       <div class="desc"><?php echo e($p['description']); ?></div>
 
-      <!-- Add to cart and go to cart page -->
       <form method="post" action="processor.php">
         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
         <input type="hidden" name="action" value="add">
