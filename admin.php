@@ -172,8 +172,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    elseif ($act === 'delete_customer') {
+        $uid = (int)($_POST['user_id'] ?? 0);
+        // prevent deleting yourself
+        if ($uid > 0 && $uid !== (int)$me['id']) {
+            $s = $db->prepare("DELETE FROM users WHERE id = ? AND role = 'customer'");
+            $s->bind_param("i", $uid);
+            $s->execute();
+            $s->close();
+            $_SESSION['admin_flash'] = ['success' => 'Customer account deleted.'];
+        }
+    }
+
+    elseif ($act === 'add_product') {
+        $name        = trim($_POST['name']        ?? '');
+        $category    = trim($_POST['category']    ?? '');
+        $version     = (int)($_POST['version']    ?? 0);
+        $price       = round((float)($_POST['price'] ?? 0), 2);
+        $stock       = max(0, (int)($_POST['stock'] ?? 0));
+        $description = trim($_POST['description'] ?? '');
+        $allowedCats = ['phone', 'pad', 'laptop'];
+        if ($name !== '' && in_array($category, $allowedCats, true) && $version > 0 && $price > 0) {
+            $s = $db->prepare("INSERT INTO products (name, category, version, price, stock, description) VALUES (?, ?, ?, ?, ?, ?)");
+            $s->bind_param("ssidis", $name, $category, $version, $price, $stock, $description);
+            $s->execute();
+            $s->close();
+            $_SESSION['admin_flash'] = ['success' => 'Product added.'];
+        } else {
+            $_SESSION['admin_flash'] = ['error' => 'Please fill in all required product fields.'];
+        }
+    }
+
+    elseif ($act === 'update_product') {
+        $pid         = (int)($_POST['product_id']  ?? 0);
+        $name        = trim($_POST['name']         ?? '');
+        $category    = trim($_POST['category']     ?? '');
+        $version     = (int)($_POST['version']     ?? 0);
+        $price       = round((float)($_POST['price'] ?? 0), 2);
+        $stock       = max(0, (int)($_POST['stock'] ?? 0));
+        $description = trim($_POST['description']  ?? '');
+        $allowedCats = ['phone', 'pad', 'laptop'];
+        if ($pid > 0 && $name !== '' && in_array($category, $allowedCats, true) && $version > 0 && $price > 0) {
+            $s = $db->prepare("UPDATE products SET name = ?, category = ?, version = ?, price = ?, stock = ?, description = ? WHERE id = ?");
+            $s->bind_param("ssidisi", $name, $category, $version, $price, $stock, $description, $pid);
+            $s->execute();
+            $s->close();
+            $_SESSION['admin_flash'] = ['success' => 'Product updated.'];
+        }
+    }
+
+    elseif ($act === 'delete_product') {
+        $pid = (int)($_POST['product_id'] ?? 0);
+        if ($pid > 0) {
+            $s = $db->prepare("DELETE FROM products WHERE id = ?");
+            $s->bind_param("i", $pid);
+            $s->execute();
+            $s->close();
+            $_SESSION['admin_flash'] = ['success' => 'Product deleted.'];
+        }
+    }
+
+    elseif ($act === 'delete_review') {
+        $rid = (int)($_POST['review_id'] ?? 0);
+        if ($rid > 0) {
+            $s = $db->prepare("DELETE FROM reviews WHERE id = ?");
+            $s->bind_param("i", $rid);
+            $s->execute();
+            $s->close();
+            $_SESSION['admin_flash'] = ['success' => 'Review deleted.'];
+        }
+    }
+
     $qs = 'section=' . urlencode($section);
     if ($section === 'reports') $qs .= '&report=' . urlencode($report);
+    if ($section === 'inventory' && isset($_GET['edit'])) $qs .= '&edit=' . (int)$_GET['edit'];
     header('Location: admin.php?' . $qs);
     exit;
 }
@@ -183,6 +255,7 @@ $db = db();
 
 $pendingCount  = (int)$db->query("SELECT COUNT(*) c FROM orders WHERE status='pending'")->fetch_assoc()['c'];
 $lowStockCount = (int)$db->query("SELECT COUNT(*) c FROM products WHERE stock < 10")->fetch_assoc()['c'];
+$reviewCount   = (int)$db->query("SELECT COUNT(*) c FROM reviews")->fetch_assoc()['c'];
 
 // overview section data
 $totalRevenue = $monthRevenue = $totalOrders = $newCustomers = 0;
@@ -262,8 +335,18 @@ if ($section === 'orders') {
 
 // inventory section data
 $inventory = [];
+$editProduct = null;
+$editProductId = 0;
 if ($section === 'inventory') {
-    $r = $db->query("SELECT id, category, version, name, price, stock FROM products ORDER BY category, version DESC, name");
+    $editProductId = (int)($_GET['edit'] ?? 0);
+    if ($editProductId > 0) {
+        $s = $db->prepare("SELECT * FROM products WHERE id = ? LIMIT 1");
+        $s->bind_param("i", $editProductId);
+        $s->execute();
+        $editProduct = $s->get_result()->fetch_assoc();
+        $s->close();
+    }
+    $r = $db->query("SELECT id, category, version, name, price, stock, description FROM products ORDER BY category, version DESC, name");
     while ($row = $r->fetch_assoc()) $inventory[] = $row;
 }
 
@@ -319,6 +402,21 @@ if ($section === 'reports') {
     }
 }
 
+// reviews section data
+$allReviews = [];
+if ($section === 'reviews') {
+    $r = $db->query("
+        SELECT r.id, r.rating, r.comment, r.created_at,
+               p.name AS product_name,
+               u.name AS reviewer
+        FROM reviews r
+        JOIN products p ON p.id = r.product_id
+        JOIN users u ON u.id = r.user_id
+        ORDER BY r.created_at DESC
+    ");
+    while ($row = $r->fetch_assoc()) $allReviews[] = $row;
+}
+
 // customers section data
 $customers = $editCustomer = null;
 $editId = 0;
@@ -372,6 +470,7 @@ $navLinks = [
     'inventory' => 'Inventory',
     'reports'   => 'Reports',
     'customers' => 'Customers',
+    'reviews'   => 'Reviews',
 ];
 ?>
 <!doctype html>
@@ -410,6 +509,9 @@ $navLinks = [
           <?php endif; ?>
           <?php if ($key === 'inventory' && $lowStockCount > 0): ?>
             <span class="sb-badge sb-badge--warn"><?= $lowStockCount ?></span>
+          <?php endif; ?>
+          <?php if ($key === 'reviews' && $reviewCount > 0): ?>
+            <span class="sb-badge sb-badge--warn"><?= $reviewCount ?></span>
           <?php endif; ?>
         </a>
       <?php endforeach; ?>
@@ -646,8 +748,93 @@ $navLinks = [
 
       <div class="page-hd">
         <h1>Inventory Management</h1>
-        <p>Monitor stock levels and update prices. Items below 10 units are flagged.</p>
+        <p>Add, edit and remove products. Items below 10 units are flagged.</p>
       </div>
+
+      <!-- add new product form -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card__head"><h2>Add New Product</h2></div>
+        <div class="card__body">
+          <form method="post" action="admin.php?section=inventory" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="add_product">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Name</label>
+              <input type="text" name="name" placeholder="e.g. Pear Phone 16" required style="width:180px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Category</label>
+              <select name="category" required class="inline-select" style="height:34px;">
+                <option value="">Select</option>
+                <option value="phone">Phone</option>
+                <option value="pad">Pad</option>
+                <option value="laptop">Laptop</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Version</label>
+              <input type="number" name="version" min="1" placeholder="16" required style="width:70px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Price (£)</label>
+              <input type="number" name="price" min="0.01" step="0.01" placeholder="999.00" required style="width:90px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Stock</label>
+              <input type="number" name="stock" min="0" value="0" style="width:70px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px;">Description</label>
+              <input type="text" name="description" placeholder="Short product description" style="width:100%;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <button type="submit" class="btn btn-primary">Add Product</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- edit product panel — shown when ?edit=id is in the URL -->
+      <?php if ($editProduct): ?>
+        <div class="edit-panel" style="background:#f0fdf4;border-color:#bbf7d0;">
+          <h3>Editing: <?= e($editProduct['name']) ?></h3>
+          <form method="post" action="admin.php?section=inventory" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="update_product">
+            <input type="hidden" name="product_id" value="<?= (int)$editProduct['id'] ?>">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Name</label>
+              <input type="text" name="name" value="<?= e($editProduct['name']) ?>" required style="width:180px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Category</label>
+              <select name="category" required class="inline-select" style="height:34px;">
+                <?php foreach (['phone','pad','laptop'] as $cat): ?>
+                  <option value="<?= $cat ?>" <?= $editProduct['category']===$cat?'selected':'' ?>><?= ucfirst($cat) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Version</label>
+              <input type="number" name="version" min="1" value="<?= (int)$editProduct['version'] ?>" required style="width:70px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Price (£)</label>
+              <input type="number" name="price" min="0.01" step="0.01" value="<?= e(number_format((float)$editProduct['price'],2,'.','')) ?>" required style="width:90px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Stock</label>
+              <input type="number" name="stock" min="0" value="<?= (int)$editProduct['stock'] ?>" style="width:70px;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Description</label>
+              <input type="text" name="description" value="<?= e($editProduct['description']) ?>" style="width:100%;padding:7px 9px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit;">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+              <a href="admin.php?section=inventory" class="btn btn-secondary btn-sm">Cancel</a>
+            </div>
+          </form>
+        </div>
+      <?php endif; ?>
 
       <div class="card">
         <div class="card__head">
@@ -668,8 +855,9 @@ $navLinks = [
               <th>Ver.</th>
               <th>Price</th>
               <th>Stock</th>
-              <th style="width:240px">Update Stock</th>
-              <th style="width:220px">Update Price</th>
+              <th style="width:200px">Update Stock</th>
+              <th style="width:180px">Update Price</th>
+              <th></th>
             </tr></thead>
             <tbody>
               <?php foreach ($inventory as $p): ?>
@@ -696,6 +884,18 @@ $navLinks = [
                       <input type="number" name="price" value="<?= e(number_format((float)$p['price'],2,'.','')) ?>" min="0.01" step="0.01" style="width:80px">
                       <button type="submit" class="btn btn-secondary btn-sm">Save</button>
                     </form>
+                  </td>
+                  <td>
+                    <div class="inline-form">
+                      <a href="admin.php?section=inventory&edit=<?= (int)$p['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                      <form method="post" action="admin.php?section=inventory"
+                            onsubmit="return confirm('Delete <?= e(addslashes($p['name'])) ?>? This cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="action" value="delete_product">
+                        <input type="hidden" name="product_id" value="<?= (int)$p['id'] ?>">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -910,7 +1110,65 @@ $navLinks = [
                   <td><?= (int)$c['order_count'] ?></td>
                   <td><strong>£<?= number_format((float)$c['total_spend'],2) ?></strong></td>
                   <td>
-                    <a href="admin.php?section=customers&edit=<?= (int)$c['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                    <div class="inline-form">
+                      <a href="admin.php?section=customers&edit=<?= (int)$c['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                      <form method="post" action="admin.php?section=customers"
+                            onsubmit="return confirm('Delete <?= e(addslashes($c['name'])) ?>? This cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="action" value="delete_customer">
+                        <input type="hidden" name="user_id" value="<?= (int)$c['id'] ?>">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
+      </div>
+
+    <?php elseif ($section === 'reviews'): ?>
+
+      <div class="page-hd">
+        <h1>Reviews</h1>
+        <p>All customer reviews across every product. Delete any that are inappropriate.</p>
+      </div>
+
+      <div class="card">
+        <div class="card__head">
+          <h2>All Reviews (<?= count($allReviews) ?>)</h2>
+        </div>
+        <?php if (empty($allReviews)): ?>
+          <div class="empty">No reviews have been submitted yet.</div>
+        <?php else: ?>
+          <table class="tbl">
+            <thead><tr>
+              <th>Product</th>
+              <th>Reviewer</th>
+              <th>Rating</th>
+              <th>Comment</th>
+              <th>Date</th>
+              <th></th>
+            </tr></thead>
+            <tbody>
+              <?php foreach ($allReviews as $rev): ?>
+                <tr>
+                  <td><strong><?= e($rev['product_name']) ?></strong></td>
+                  <td style="color:#6b7280"><?= e($rev['reviewer']) ?></td>
+                  <td style="white-space:nowrap">
+                    <?= str_repeat('★', (int)$rev['rating']) ?><?= str_repeat('☆', 5 - (int)$rev['rating']) ?>
+                  </td>
+                  <td style="font-size:13px;color:#374151;max-width:320px"><?= e($rev['comment']) ?></td>
+                  <td style="color:#9ca3af;white-space:nowrap"><?= e(date('j M Y', strtotime($rev['created_at']))) ?></td>
+                  <td>
+                    <form method="post" action="admin.php?section=reviews"
+                          onsubmit="return confirm('Delete this review? This cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                      <input type="hidden" name="action" value="delete_review">
+                      <input type="hidden" name="review_id" value="<?= (int)$rev['id'] ?>">
+                      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
                   </td>
                 </tr>
               <?php endforeach; ?>
