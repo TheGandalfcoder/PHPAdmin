@@ -100,42 +100,8 @@ function statusBadge(string $status): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>My Account | Pear Store</title>
-  <style>
-    *{box-sizing:border-box;}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;margin:0;background:#f5f5f7;color:#1d1d1f;}
-    .page{max-width:960px;margin:0 auto;padding:32px 18px;}
-    h1{font-size:26px;font-weight:700;margin:0 0 4px;letter-spacing:-.02em;}
-    .subhead{color:#6b7280;font-size:14px;margin:0 0 28px;}
-    .grid{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start;}
-    @media(max-width:768px){.grid{grid-template-columns:1fr;}}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;}
-    .card h2{font-size:16px;font-weight:700;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid #f3f4f6;}
-    .field{margin-bottom:14px;}
-    .field label{display:block;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
-    .field input{width:100%;padding:9px 11px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .15s;}
-    .field input:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px rgba(0,113,227,.1);}
-    .btn{padding:9px 18px;background:#0071e3;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;}
-    .btn:hover{background:#005bb5;}
-    .alert-warn{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:14px;color:#92400e;}
-    .alert-warn strong{display:block;margin-bottom:2px;}
-    .alert-ok{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:14px;color:#166534;}
-    .errors{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:14px;color:#b91c1c;}
-    .errors ul{margin:4px 0 0;padding-left:16px;}
-    .order-row{border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;overflow:hidden;}
-    .order-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#fafafa;}
-    .order-id{font-size:12px;font-family:monospace;color:#374151;background:#e5e7eb;padding:2px 7px;border-radius:4px;}
-    .order-meta{font-size:13px;color:#6b7280;}
-    .order-total{font-size:15px;font-weight:700;color:#1d1d1f;}
-    .order-items{padding:14px 16px;border-top:1px solid #f3f4f6;}
-    .order-items table{width:100%;border-collapse:collapse;font-size:13px;}
-    .order-items td{padding:4px 0;vertical-align:top;}
-    .order-items td:last-child{text-align:right;font-weight:600;}
-    .empty-state{text-align:center;padding:40px;color:#9ca3af;font-size:15px;}
-    details summary{cursor:pointer;font-size:13px;color:#0071e3;list-style:none;padding:8px 16px;border-top:1px solid #f3f4f6;}
-    details summary::-webkit-details-marker{display:none;}
-    details summary::before{content:'+ '}
-    details[open] summary::before{content:'- '}
-  </style>
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/account.css">
 </head>
 <body>
 <?php include '_nav.php'; ?>

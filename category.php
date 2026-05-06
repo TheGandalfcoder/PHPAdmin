@@ -100,28 +100,8 @@ $clearUrl = "category.php?category=" . urlencode($category);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo e($title); ?> | Pear Store</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif; max-width:1200px; margin:auto; padding:18px;}
-    a{color:#0071e3; text-decoration:none;}
-    .layout{display:grid; grid-template-columns:260px 1fr; gap:18px; align-items:start;}
-    @media (max-width: 900px){ .layout{grid-template-columns:1fr;} }
-
-    .panel{border:1px solid #eef2f6; border-radius:12px; padding:14px;}
-    .panel h3{margin:0 0 10px; font-size:16px;}
-    label{display:block; font-size:13px; color:#444; margin:10px 0 6px;}
-    input,select{width:100%; padding:9px 10px; border:1px solid #e5e7eb; border-radius:10px; font-family:inherit;}
-    .btn{background:#0071e3; color:#fff; border:none; border-radius:10px; padding:10px 12px; cursor:pointer; width:100%; margin-top:12px;}
-    .muted{color:#6b7280; font-size:13px;}
-
-    .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:16px;}
-    .card{border:1px solid #eef2f6; border-radius:12px; padding:14px; transition:.15s;}
-    img{width:100%; height:170px; object-fit:cover; border-radius:10px; margin-bottom:10px;}
-    .price{color:#0071e3; font-weight:700;}
-    .small{color:#444; font-size:14px;}
-    .card-link { text-decoration:none; color:inherit; }
-    .card-link:hover .card { box-shadow:0 2px 12px #0071e322; border-color:#0071e3; }
-    .toprow{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
-  </style>
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/shop.css">
 </head>
 <body>
 <?php include '_nav.php'; ?>

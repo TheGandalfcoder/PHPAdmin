@@ -1,0 +1,33 @@
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;margin:0;background:#f5f5f7;color:#1d1d1f;}
+.page{max-width:760px;margin:32px auto;padding:0 16px 60px;}
+.back{font-size:14px;color:#0071e3;text-decoration:none;display:inline-block;margin-bottom:20px;}
+
+.invoice{background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.inv-head{padding:28px 32px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;}
+.inv-head h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-.02em;}
+.inv-head .order-id{font-size:12px;font-family:monospace;color:#6b7280;}
+.badge{display:inline-block;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0;border-bottom:1px solid #f3f4f6;}
+.meta-box{padding:18px 32px;border-right:1px solid #f3f4f6;}
+.meta-box:last-child{border-right:none;}
+.meta-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:5px;}
+.meta-value{font-size:14px;font-weight:600;color:#1d1d1f;line-height:1.4;}
+
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:700;padding:12px 32px;background:#f9fafb;border-bottom:1px solid #f3f4f6;}
+th.r,td.r{text-align:right;}
+td{padding:14px 32px;font-size:14px;border-bottom:1px solid #f9fafb;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+
+.totals{padding:16px 32px;background:#f9fafb;border-top:1px solid #f3f4f6;}
+.totals-row{display:flex;justify-content:flex-end;gap:80px;font-size:14px;padding:4px 0;}
+.totals-row.grand{font-size:16px;font-weight:700;padding-top:10px;border-top:1px solid #e5e7eb;margin-top:6px;}
+.totals-label{color:#6b7280;}
+
+@media print{.back{display:none;}}
+@media(max-width:600px){
+  th,td{padding:10px 16px;}
+  .inv-head,.meta-box,.totals{padding-left:16px;padding-right:16px;}
+}

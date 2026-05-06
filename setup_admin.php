@@ -46,21 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <title>Admin Setup | Pear Store</title>
-  <style>
-    body{font-family:-apple-system,sans-serif;background:#f5f5f7;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:36px;max-width:420px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.07);}
-    h1{margin:0 0 6px;font-size:22px;}
-    p{color:#6b7280;font-size:14px;margin:0 0 24px;}
-    .field{margin-bottom:14px;}
-    .field label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
-    .field input{width:100%;padding:9px 11px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit;}
-    .field input:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px rgba(0,113,227,.1);}
-    .btn{width:100%;padding:11px;background:#0071e3;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
-    .errors{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:12px;border-radius:8px;font-size:14px;margin-bottom:16px;}
-    .errors ul{margin:4px 0 0;padding-left:16px;}
-    .success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:16px;border-radius:8px;font-size:14px;}
-    .warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:20px;}
-  </style>
+  <link rel="stylesheet" href="css/setup.css">
 </head>
 <body>
 <div class="card">
